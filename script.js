@@ -64,13 +64,13 @@ document.getElementById('checkout-button').addEventListener('click', () => {
     announce('Seu carrinho está vazio. Adicione um produto antes de finalizar.');
     return;
   }
-  if (!/^\\d{10,15}$/.test(WHATSAPP_NUMBER)) {
+  if (!/^\d{10,15}$/.test(WHATSAPP_NUMBER)) {
     announce('Pedido montado! Para receber pedidos reais, configure WHATSAPP_NUMBER no script.js com o número da loja.');
     return;
   }
   const lines = Array.from(cart.values()).map((item) => item.name + ' x' + item.quantity + ' — ' + money(item.price * item.quantity));
   const total = Array.from(cart.values()).reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const message = 'Olá! Quero fazer este pedido:\\n' + lines.join('\\n') + '\\nTotal: ' + money(total);
+  const message = 'Olá! Quero fazer este pedido:\n' + lines.join('\n') + '\nTotal: ' + money(total);
   window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(message), '_blank', 'noopener');
 });
 renderCart();

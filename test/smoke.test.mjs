@@ -20,7 +20,7 @@ test('landing page has four priced products and food images', () => {
   const cards = [...document.querySelectorAll('[data-product-card]')];
   assert.equal(cards.length, 4);
   assert.ok(cards.every((card) => card.querySelector('img[src][alt]')));
-  assert.ok(cards.every((card) => /R\\$\\s?\\d/.test(card.textContent)));
+  assert.ok(cards.every((card) => /R\$\s?\d/.test(card.textContent)));
   assert.equal(document.querySelectorAll('[data-add-to-cart]').length, 4);
   dom.window.close();
 });
