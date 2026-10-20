@@ -1,157 +1,76 @@
 'use strict';
-
-const display = document.getElementById('display');
-const keys = document.querySelectorAll('.key');
-
-const OPERATORS = {
-  add: '+',
-  subtract: '-',
-  multiply: '*',
-  divide: '/',
-};
-
-let accumulator = null;
-let operator = null;
-let waitingForNumber = false;
-
-function show(value) {
-  display.textContent = value;
-}
-
-function currentValue() {
-  const raw = display.textContent.trim();
-  const parsed = parseFloat(raw);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-function clearAll() {
-  accumulator = null;
-  operator = null;
-  waitingForNumber = false;
-  show('0');
-}
-
-function deleteLast() {
-  if (waitingForNumber) {
+const cart = new Map();
+const productGrid = document.getElementById('product-grid');
+const cartCount = document.getElementById('cart-count');
+const cartItems = document.getElementById('cart-items');
+const cartTotal = document.getElementById('cart-total');
+const orderStatus = document.getElementById('order-status');
+const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+const WHATSAPP_NUMBER = '';
+function money(value) { return formatter.format(value); }
+function announce(message) { if (orderStatus) orderStatus.textContent = message; }
+function renderCart() {
+  let quantity = 0;
+  let total = 0;
+  for (const item of cart.values()) { quantity += item.quantity; total += item.price * item.quantity; }
+  cartCount.textContent = String(quantity);
+  cartTotal.textContent = money(total);
+  cartItems.replaceChildren();
+  if (cart.size === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'cart-empty';
+    empty.textContent = 'Seu carrinho está vazio. Escolha algo do cardápio!';
+    cartItems.append(empty);
     return;
   }
-  const text = display.textContent;
-  const next = text.length > 1 ? text.slice(0, -1) : '0';
-  show(next);
-}
-
-function appendDigit(digit) {
-  if (waitingForNumber) {
-    show(digit);
-    waitingForNumber = false;
-    return;
-  }
-  show(display.textContent === '0' ? digit : display.textContent + digit);
-}
-
-function appendDecimal() {
-  if (waitingForNumber) {
-    show('0.');
-    waitingForNumber = false;
-    return;
-  }
-  if (!display.textContent.includes('.')) {
-    show(display.textContent + '.');
+  for (const item of cart.values()) {
+    const row = document.createElement('li');
+    row.textContent = item.name + ' × ' + item.quantity + ' — ' + money(item.price * item.quantity);
+    cartItems.append(row);
   }
 }
-
-function applyPercent() {
-  show(String(currentValue() / 100));
-}
-
-function compute() {
-  if (operator === null || accumulator === null) {
-    return null;
-  }
-  const operand = currentValue();
-  let result;
-  switch (operator) {
-    case '+':
-      result = accumulator + operand;
-      break;
-    case '-':
-      result = accumulator - operand;
-      break;
-    case '*':
-      result = accumulator * operand;
-      break;
-    case '/':
-      result = operand === 0 ? NaN : accumulator / operand;
-      break;
-    default:
-      return null;
-  }
-  return result;
-}
-
-function chooseOperator(action) {
-  const symbol = OPERATORS[action];
-  if (!symbol) {
-    return;
-  }
-  if (operator !== null && !waitingForNumber) {
-    const result = compute();
-    if (result === null) {
-      return;
-    }
-    accumulator = result;
-    show(format(result));
-  } else {
-    accumulator = currentValue();
-  }
-  operator = symbol;
-  waitingForNumber = true;
-}
-
-function format(value) {
-  if (!Number.isFinite(value)) {
-    return 'Erro';
-  }
-  return String(Math.round(value * 1e10) / 1e10);
-}
-
-function equals() {
-  const result = compute();
-  if (result === null) {
-    return;
-  }
-  show(format(result));
-  accumulator = result;
-  operator = null;
-  waitingForNumber = true;
-}
-
-keys.forEach((key) => {
-  key.addEventListener('click', () => {
-    const number = key.dataset.number;
-    if (number !== undefined) {
-      appendDigit(number);
-      return;
-    }
-    switch (key.dataset.action) {
-      case 'clear':
-        clearAll();
-        break;
-      case 'delete':
-        deleteLast();
-        break;
-      case 'percent':
-        applyPercent();
-        break;
-      case 'decimal':
-        appendDecimal();
-        break;
-      case 'equal':
-        equals();
-        break;
-      default:
-        chooseOperator(key.dataset.action);
-        break;
-    }
+document.querySelectorAll('[data-filter]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const selected = button.dataset.filter;
+    document.querySelectorAll('[data-filter]').forEach((filterButton) => {
+      const active = filterButton === button;
+      filterButton.classList.toggle('is-active', active);
+      filterButton.setAttribute('aria-pressed', String(active));
+    });
+    productGrid.querySelectorAll('[data-product-card]').forEach((card) => {
+      card.hidden = selected !== 'todos' && card.dataset.category !== selected;
+    });
   });
 });
+productGrid.querySelectorAll('[data-add-to-cart]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const card = button.closest('[data-product-card]');
+    if (!card) return;
+    const id = card.dataset.productId;
+    const current = cart.get(id);
+    if (current) current.quantity += 1;
+    else cart.set(id, { name: card.querySelector('.product-card__name').textContent.trim(), price: Number(card.dataset.price), quantity: 1 });
+    announce('Adicionado ao carrinho.');
+    renderCart();
+  });
+});
+document.getElementById('clear-cart').addEventListener('click', () => {
+  cart.clear();
+  renderCart();
+  announce('Carrinho limpo.');
+});
+document.getElementById('checkout-button').addEventListener('click', () => {
+  if (cart.size === 0) {
+    announce('Seu carrinho está vazio. Adicione um produto antes de finalizar.');
+    return;
+  }
+  if (!/^\\d{10,15}$/.test(WHATSAPP_NUMBER)) {
+    announce('Pedido montado! Para receber pedidos reais, configure WHATSAPP_NUMBER no script.js com o número da loja.');
+    return;
+  }
+  const lines = Array.from(cart.values()).map((item) => item.name + ' x' + item.quantity + ' — ' + money(item.price * item.quantity));
+  const total = Array.from(cart.values()).reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const message = 'Olá! Quero fazer este pedido:\\n' + lines.join('\\n') + '\\nTotal: ' + money(total);
+  window.open('https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(message), '_blank', 'noopener');
+});
+renderCart();

@@ -2,7 +2,7 @@
   "name": "siteburguer",
   "version": "0.1.0",
   "private": true,
-  "description": "vai ser uma landpage one page de delivery de lanches pode gerar images ou pegar do google e deixar aba de produtos",
+  "description": "Landing page one page de delivery de lanches com imagens, cardápio, filtros e carrinho.",
   "scripts": {
     "test": "node --test"
   },

@@ -1,5 +1,3 @@
-// Teste de fumaça no DOM: carrega a página real e clica nos botões.
-// É o teste que impede a página de subir com ids e seletores quebrados.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -7,9 +5,7 @@ import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { JSDOM } from 'jsdom';
 
-const here = dirname(fileURLToPath(import.meta.url));
-const root = join(here, '..');
-
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 function loadPage() {
   const html = readFileSync(join(root, 'index.html'), 'utf8');
   const script = readFileSync(join(root, 'script.js'), 'utf8');
@@ -17,80 +13,48 @@ function loadPage() {
   dom.window.eval(script);
   return dom;
 }
-
-function press(dom, selector) {
-  const button = dom.window.document.querySelector(selector);
-  assert.ok(button, `botão ausente: ${selector}`);
-  button.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
-}
-
-function readout(dom) {
-  return dom.window.document.getElementById('display').textContent.trim();
-}
-
-test('a página carrega sem erro e mostra zero', () => {
+test('landing page has four priced products and food images', () => {
   const dom = loadPage();
-  assert.equal(readout(dom), '0');
+  const document = dom.window.document;
+  assert.ok(document.querySelector('#produtos'));
+  const cards = [...document.querySelectorAll('[data-product-card]')];
+  assert.equal(cards.length, 4);
+  assert.ok(cards.every((card) => card.querySelector('img[src][alt]')));
+  assert.ok(cards.every((card) => /R\\$\\s?\\d/.test(card.textContent)));
+  assert.equal(document.querySelectorAll('[data-add-to-cart]').length, 4);
+  dom.window.close();
 });
-
-test('a soma funciona: 7 + 5 = 12', () => {
+test('category filter only shows products in selected category', () => {
   const dom = loadPage();
-  press(dom, '[data-number="7"]');
-  press(dom, '[data-action="add"]');
-  press(dom, '[data-number="5"]');
-  press(dom, '[data-action="equal"]');
-  assert.equal(readout(dom), '12');
+  dom.window.document.querySelector('[data-filter="acompanhamento"]').click();
+  const cards = [...dom.window.document.querySelectorAll('[data-product-card]')];
+  assert.equal(cards.filter((card) => !card.hidden).length, 1);
+  assert.equal(cards.find((card) => !card.hidden).dataset.productId, 'batata-crocante');
+  dom.window.close();
 });
-
-test('a subtração funciona: 9 - 4 = 5', () => {
+test('adding products updates cart quantity and total', () => {
   const dom = loadPage();
-  press(dom, '[data-number="9"]');
-  press(dom, '[data-action="subtract"]');
-  press(dom, '[data-number="4"]');
-  press(dom, '[data-action="equal"]');
-  assert.equal(readout(dom), '5');
+  const add = dom.window.document.querySelector('[data-add-to-cart="smash-classico"]');
+  add.click();
+  add.click();
+  assert.equal(dom.window.document.querySelector('#cart-count').textContent, '2');
+  assert.match(dom.window.document.querySelector('#cart-total').textContent, /49,80/);
+  assert.match(dom.window.document.querySelector('#cart-items').textContent, /Smash Clássico × 2/);
+  dom.window.close();
 });
-
-test('a multiplicação funciona: 6 × 7 = 42', () => {
+test('clearing cart resets quantity, total and items', () => {
   const dom = loadPage();
-  press(dom, '[data-number="6"]');
-  press(dom, '[data-action="multiply"]');
-  press(dom, '[data-number="7"]');
-  press(dom, '[data-action="equal"]');
-  assert.equal(readout(dom), '42');
+  dom.window.document.querySelector('[data-add-to-cart="duplo-cheddar"]').click();
+  dom.window.document.querySelector('#clear-cart').click();
+  assert.equal(dom.window.document.querySelector('#cart-count').textContent, '0');
+  assert.match(dom.window.document.querySelector('#cart-total').textContent, /0,00/);
+  assert.match(dom.window.document.querySelector('#cart-items').textContent, /carrinho está vazio/i);
+  dom.window.close();
 });
-
-test('a divisão funciona: 12 ÷ 3 = 4', () => {
+test('checkout does not claim a real order before WhatsApp is configured', () => {
   const dom = loadPage();
-  press(dom, '[data-number="1"]');
-  press(dom, '[data-number="2"]');
-  press(dom, '[data-action="divide"]');
-  press(dom, '[data-number="3"]');
-  press(dom, '[data-action="equal"]');
-  assert.equal(readout(dom), '4');
-});
-
-test('o AC limpa o visor', () => {
-  const dom = loadPage();
-  press(dom, '[data-number="8"]');
-  press(dom, '[data-action="clear"]');
-  assert.equal(readout(dom), '0');
-});
-
-test('os operadores não viram dígitos no visor', () => {
-  const dom = loadPage();
-  press(dom, '[data-number="3"]');
-  press(dom, '[data-action="add"]');
-  press(dom, '[data-number="2"]');
-  press(dom, '[data-action="equal"]');
-  assert.doesNotMatch(readout(dom), /[+\-*/]/);
-});
-
-test('divisão por zero mostra erro em vez de quebrar', () => {
-  const dom = loadPage();
-  press(dom, '[data-number="8"]');
-  press(dom, '[data-action="divide"]');
-  press(dom, '[data-number="0"]');
-  press(dom, '[data-action="equal"]');
-  assert.equal(readout(dom), 'Erro');
+  dom.window.document.querySelector('[data-add-to-cart="smash-classico"]').click();
+  dom.window.document.querySelector('#checkout-button').click();
+  assert.match(dom.window.document.querySelector('#order-status').textContent, /configure WHATSAPP_NUMBER/i);
+  dom.window.close();
 });
