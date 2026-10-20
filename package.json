@@ -1,0 +1,12 @@
+{
+  "name": "siteburguer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "vai ser uma landpage one page de delivery de lanches pode gerar images ou pegar do google e deixar aba de produtos",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0"
+  }
+}

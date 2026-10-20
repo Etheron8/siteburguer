@@ -1,0 +1,88 @@
+:root {
+    --bg: #0b1020;
+    --panel: #131e32;
+    --fg: #e6edf7;
+    --muted: #9aaac0;
+    --accent: #64e1c1;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.app {
+    text-align: center;
+}
+
+.app__title {
+    margin: 0 0 4px;
+    font-size: 1.4rem;
+}
+
+.app__objective {
+    margin: 0 0 20px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.calculator {
+    width: 320px;
+    padding: 16px;
+    border-radius: 18px;
+    background: var(--panel);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+}
+
+.calculator__display {
+    display: block;
+    min-height: 64px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    background: #0e1728;
+    color: var(--fg);
+    font-size: 2rem;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.calculator__keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.key {
+    padding: 16px 0;
+    border: 0;
+    border-radius: 10px;
+    background: #1b2740;
+    color: var(--fg);
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+.key:hover {
+    background: #24334f;
+}
+
+.key:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.key--wide {
+    grid-column: span 2;
+    background: var(--accent);
+    color: #06231c;
+}
